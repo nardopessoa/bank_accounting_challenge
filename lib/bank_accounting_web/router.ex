@@ -7,5 +7,7 @@ defmodule BankAccountingWeb.Router do
 
   scope "/api", BankAccountingWeb do
     pipe_through :api
+
+    resources "/users", UserController, except: [:new, :edit]
   end
 end
