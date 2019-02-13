@@ -19,4 +19,10 @@ defmodule BankAccountingWeb.FallbackController do
     |> put_view(BankAccountingWeb.ErrorView)
     |> render(:"404")
   end
+
+  def call(conn, {:error, error}) when error in [:unauthorized, :invalid_password] do
+    conn
+    |> put_status(error)
+    |> json(%{error: "Login error"})
+  end
 end

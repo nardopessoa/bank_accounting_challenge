@@ -13,4 +13,8 @@ defmodule BankAccountingWeb.UserView do
   def render("user.json", %{user: user}) do
     %{id: user.id, username: user.username}
   end
+
+  def render("access_token.json", %{access_token: token}) do
+    %{access_token: token}
+  end
 end

@@ -44,7 +44,8 @@ defmodule BankAccounting.MixProject do
       {:gettext, "~> 0.16.1"},
       {:jason, "~> 1.1.2"},
       {:plug_cowboy, "~> 2.0.1"},
-      {:bcrypt_elixir, "~> 2.0.0"}
+      {:bcrypt_elixir, "~> 2.0.0"},
+      {:guardian, "~> 1.2.1"}
     ]
   end
 

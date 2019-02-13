@@ -5,7 +5,7 @@ defmodule BankAccounting.Auth do
 
   import Ecto.Query, warn: false
   alias BankAccounting.Repo
-
+  alias BankAccounting.Guardian
   alias BankAccounting.Auth.User
 
   @doc """
@@ -100,5 +100,30 @@ defmodule BankAccounting.Auth do
   """
   def change_user(%User{} = user) do
     User.changeset(user, %{})
+  end
+
+  def token_sign_in(username, password) do
+    with {:ok, user} <- get_by_username(username),
+         {:ok, user} <- verify_password(password, user) do
+      Guardian.encode_and_sign(user)
+    else
+      {:error, error} -> {:error, error}
+      _ -> {:error, :unauthorized}
+    end
+  end
+
+  defp get_by_username(username) when is_binary(username) do
+    User
+    |> Repo.get_by(username: username)
+    |> verify_user()
+  end
+
+  defp verify_user(nil), do: Bcrypt.no_user_verify()
+  defp verify_user(user), do: {:ok, user}
+
+  defp verify_password(password, %User{} = user) when is_binary(password) do
+    password
+    |> Bcrypt.verify_pass(user.password_encrypted)
+    |> if(do: {:ok, user}, else: {:error, :invalid_password})
   end
 end
