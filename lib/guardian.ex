@@ -10,7 +10,7 @@ defmodule BankAccounting.Guardian do
     {:error, :reason_for_error}
   end
 
-  def resource_from_claims(claims) when is_list(claims) do
+  def resource_from_claims(claims) when is_map(claims) do
     id = claims["sub"]
     resource = BankAccounting.Auth.get_user!(id)
     {:ok, resource}
