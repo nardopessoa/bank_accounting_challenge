@@ -14,12 +14,21 @@ defmodule BankAccountingWeb.ConnCase do
   """
 
   use ExUnit.CaseTemplate
+  alias BankAccounting.Auth
+  import BankAccounting.Guardian, only: [encode_and_sign: 3]
+
+  @default_user_attrs %{
+    password: "@password",
+    password_confirmation: "@password",
+    username: "some username"
+  }
 
   using do
     quote do
       # Import conveniences for testing with connections
       use Phoenix.ConnTest
       alias BankAccountingWeb.Router.Helpers, as: Routes
+      import BankAccountingWeb.ConnCase
 
       # The default endpoint for testing
       @endpoint BankAccountingWeb.Endpoint
@@ -34,5 +43,12 @@ defmodule BankAccountingWeb.ConnCase do
     end
 
     {:ok, conn: Phoenix.ConnTest.build_conn()}
+  end
+
+  def create_and_sign_in_user(attrs \\ @default_user_attrs) do
+    {:ok, user} = Auth.create_user(attrs)
+    {:ok, token, _} = encode_and_sign(user, %{}, token_type: :access)
+
+    {user, token}
   end
 end

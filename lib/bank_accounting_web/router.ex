@@ -21,5 +21,6 @@ defmodule BankAccountingWeb.Router do
     pipe_through [:api, :authenticated]
 
     get "/myself", UserController, :show
+    resources "/accounts", AccountController, except: [:new, :edit]
   end
 end
