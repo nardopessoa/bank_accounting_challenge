@@ -12,7 +12,7 @@ config :logger, level: :warn
 # Configure your database
 config :bank_accounting, BankAccounting.Repo,
   username: "postgres",
-  password: "postgres",
+  password: "123456",
   database: "bank_accounting_test",
   hostname: "localhost",
   pool: Ecto.Adapters.SQL.Sandbox
