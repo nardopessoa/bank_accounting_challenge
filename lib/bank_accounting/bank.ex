@@ -4,6 +4,7 @@ defmodule BankAccounting.Bank do
   """
 
   import Ecto.Query, warn: false
+  alias Ecto.Multi
   alias BankAccounting.Repo
 
   alias BankAccounting.Bank.Account
@@ -100,5 +101,83 @@ defmodule BankAccounting.Bank do
   """
   def change_account(%Account{} = account) do
     Account.changeset(account, %{})
+  end
+
+  alias BankAccounting.Bank.BalanceMovement
+
+  @doc """
+  Gets a single balance_movement.
+
+  Raises `Ecto.NoResultsError` if the BalanceMovement does not exist.
+
+  ## Examples
+
+      iex> get_balance_movement!(123)
+      %BalanceMovement{}
+
+      iex> get_balance_movement!(456)
+      ** (Ecto.NoResultsError)
+
+  """
+  def get_balance_movement!(id), do: Repo.get!(BalanceMovement, id)
+
+  @doc """
+  Creates a balance_movement.
+
+  ## Examples
+
+      iex> create_balance_movement(%{field: value})
+      {:ok, %BalanceMovement{}}
+
+      iex> create_balance_movement(%{field: bad_value})
+      {:error, %Ecto.Changeset{}}
+
+  """
+  def create_balance_movement(attrs \\ %{}) do
+    balance_movement_changeset = BalanceMovement.changeset(%BalanceMovement{}, attrs)
+
+    if not balance_movement_changeset.valid? do
+      {:error, balance_movement_changeset}
+    else
+      %{
+        "source_account_id" => source_account_id,
+        "destination_account_id" => destination_account_id,
+        "amount" => amount
+      } = attrs
+
+      result =
+        Multi.new()
+        |> Multi.insert(:balance_movement, balance_movement_changeset)
+        |> Multi.update_all(
+          :source_account,
+          from(account in Account, where: account.id == ^source_account_id),
+          inc: [balance: amount * -1]
+        )
+        |> Multi.update_all(
+          :destination_account,
+          from(account in Account, where: account.id == ^destination_account_id),
+          inc: [balance: amount]
+        )
+        |> Repo.transaction()
+
+      {:ok, result} = result
+      {:ok, result[:balance_movement]}
+    end
+  end
+
+  @doc """
+  Deletes a BalanceMovement.
+
+  ## Examples
+
+      iex> delete_balance_movement(balance_movement)
+      {:ok, %BalanceMovement{}}
+
+      iex> delete_balance_movement(balance_movement)
+      {:error, %Ecto.Changeset{}}
+
+  """
+  def delete_balance_movement(%BalanceMovement{} = balance_movement) do
+    Repo.delete(balance_movement)
   end
 end

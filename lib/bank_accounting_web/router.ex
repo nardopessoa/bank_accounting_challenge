@@ -22,5 +22,6 @@ defmodule BankAccountingWeb.Router do
 
     get "/myself", UserController, :show
     resources "/accounts", AccountController, except: [:new, :edit]
+    resources "/balance_movements", BalanceMovementController, only: [:create, :show, :delete]
   end
 end
