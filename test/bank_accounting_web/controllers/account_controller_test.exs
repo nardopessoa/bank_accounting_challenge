@@ -1,6 +1,5 @@
 defmodule BankAccountingWeb.AccountControllerTest do
   use BankAccountingWeb.ConnCase
-
   alias BankAccounting.Bank
   alias BankAccounting.Bank.Account
 
@@ -18,6 +17,9 @@ defmodule BankAccountingWeb.AccountControllerTest do
   end
 
   setup %{conn: conn} do
+    {_user, token} = create_and_sign_in_user()
+    conn = put_req_header(conn, "authorization", "bearer #{token}")
+
     {:ok, conn: put_req_header(conn, "accept", "application/json")}
   end
 
