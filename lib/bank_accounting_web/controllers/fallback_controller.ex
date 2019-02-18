@@ -22,7 +22,13 @@ defmodule BankAccountingWeb.FallbackController do
 
   def call(conn, {:error, error}) when error in [:unauthorized, :invalid_password] do
     conn
-    |> put_status(error)
-    |> json(%{error: "Login error"})
+    |> put_status(:unauthorized)
+    |> json(%{error: "Falha na tentativa de login"})
+  end
+
+  def call(conn, {:error, error}) do
+    conn
+    |> put_status(:bad_request)
+    |> json(%{error: error})
   end
 end

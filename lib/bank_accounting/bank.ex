@@ -145,25 +145,45 @@ defmodule BankAccounting.Bank do
         "amount" => amount
       } = attrs
 
-      result =
-        Multi.new()
-        |> Multi.insert(:balance_movement, balance_movement_changeset)
-        |> Multi.update_all(
-          :source_account,
-          from(account in Account, where: account.id == ^source_account_id),
-          inc: [balance: amount * -1]
-        )
-        |> Multi.update_all(
-          :destination_account,
-          from(account in Account, where: account.id == ^destination_account_id),
-          inc: [balance: amount]
-        )
-        |> Repo.transaction()
+      try do
+        result =
+          Multi.new()
+          |> Multi.insert(:balance_movement, balance_movement_changeset)
+          |> Multi.update_all(
+            :source_account,
+            from(account in Account, where: account.id == ^source_account_id),
+            inc: [balance: amount * -1]
+          )
+          |> Multi.update_all(
+            :destination_account,
+            from(account in Account, where: account.id == ^destination_account_id),
+            inc: [balance: amount]
+          )
+          |> Repo.transaction()
+          |> create_balance_movement_result()
+      rescue
+        pg_error in Postgrex.Error ->
+          %Postgrex.Error{
+            postgres: %{
+              code: :check_violation,
+              constraint: "balance_must_be_positive"
+            }
+          } = pg_error
 
-      {:ok, result} = result
-      {:ok, result[:balance_movement]}
+          {:error, "A conta de origem não possui saldo suficiente."}
+      end
     end
   end
+
+  defp create_balance_movement_result({:ok, result}) do
+    {:ok, result[:balance_movement]}
+  end
+
+  defp create_balance_movement_result({:error, _multi_key, error, _}) do
+    {:error, error}
+  end
+
+  defp create_balance_movement_result(any), do: any
 
   @doc """
   Deletes a BalanceMovement.

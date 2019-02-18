@@ -11,7 +11,10 @@ defmodule BankAccountingWeb.AccountView do
   end
 
   def render("account.json", %{account: account}) do
-    %{id: account.id,
-      balance: account.balance}
+    %{id: account.id, balance: account.balance}
+  end
+
+  def render("not_found.json", %{id: _id}) do
+    %{error: "A conta informada não existe"}
   end
 end

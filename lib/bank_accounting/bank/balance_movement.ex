@@ -18,6 +18,12 @@ defmodule BankAccounting.Bank.BalanceMovement do
   def changeset(balance_movement, attrs) do
     balance_movement
     |> cast(attrs, @allowed)
-    |> validate_required(@allowed)
+    |> validate_required(@allowed, message: "Campo obrigatório")
+    |> foreign_key_constraint(:source_account_id, message: "Conta origem não existe!")
+    |> foreign_key_constraint(:destination_account_id, message: "Conta destino não existe!")
+    |> validate_number(:amount,
+      greater_than: 0.0,
+      message: "O valor da transferência de dinheiro deve ser maior que zero."
+    )
   end
 end
