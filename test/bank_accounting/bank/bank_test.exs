@@ -1,6 +1,7 @@
 defmodule BankAccounting.BankTest do
   use BankAccounting.DataCase
 
+  alias BankAccounting.Auth
   alias BankAccounting.Bank
 
   describe "accounts" do
@@ -87,6 +88,105 @@ defmodule BankAccounting.BankTest do
     test "change_account/1 returns a account changeset" do
       account = account_fixture()
       assert %Ecto.Changeset{} = Bank.change_account(account)
+    end
+  end
+
+  describe "balance_movement" do
+    alias BankAccounting.Bank.BalanceMovement
+
+    @valid_attrs %{amount: 120.5}
+    @invalid_attrs %{amount: nil}
+
+    def balance_movement_fixture(attrs \\ %{}) do
+      {:ok, balance_movement} =
+        attrs
+        |> Enum.into(@valid_attrs)
+        |> Bank.create_balance_movement()
+
+      balance_movement
+    end
+
+    setup do
+      user_attrs = %{
+        password: "1234567890",
+        password_confirmation: "1234567890",
+        username: "username"
+      }
+
+      {:ok, user} = Auth.create_user(user_attrs)
+
+      source_account = account_fixture()
+      destination_account = account_fixture()
+
+      attrs = %{
+        user_id: user.id,
+        source_account_id: source_account.id,
+        destination_account_id: destination_account.id
+      }
+
+      {:ok, attrs: attrs}
+    end
+
+    test "get_balance_movement!/1 returns the balance_movement with given id", %{attrs: attrs} do
+      balance_movement = balance_movement_fixture(attrs)
+      assert Bank.get_balance_movement!(balance_movement.id) == balance_movement
+    end
+
+    test "create_balance_movement/1 with valid data creates a balance_movement", %{attrs: attrs} do
+      assert {:ok, %BalanceMovement{} = balance_movement} =
+               attrs
+               |> Enum.into(@valid_attrs)
+               |> Bank.create_balance_movement()
+
+      assert balance_movement.amount == Decimal.new("120.5")
+    end
+
+    test "create_balance_movement/1 with invalid amount returns error changeset", %{attrs: attrs} do
+      assert {:error, %Ecto.Changeset{errors: errors}} =
+               attrs
+               |> Enum.into(@invalid_attrs)
+               |> Bank.create_balance_movement()
+
+      assert [amount: {_, [validation: :required]}] = errors
+    end
+
+    test "create_balance_movement/1 with invalid source_account returns error changeset",
+         %{attrs: attrs} do
+      assert {:error, %Ecto.Changeset{errors: errors}} =
+               attrs
+               |> Map.update!(:source_account_id, &(&1 + 999_999_999))
+               |> Enum.into(@valid_attrs)
+               |> Bank.create_balance_movement()
+
+      assert [source_account_id: {_, [constraint: :foreign, constraint_name: _]}] = errors
+    end
+
+    test "create_balance_movement/1 with invalid destination_account returns error changeset",
+         %{attrs: attrs} do
+      assert {:error, %Ecto.Changeset{errors: errors}} =
+               attrs
+               |> Map.update!(:destination_account_id, &(&1 + 999_999_999))
+               |> Enum.into(@valid_attrs)
+               |> Bank.create_balance_movement()
+
+      assert [destination_account_id: {_, [constraint: :foreign, constraint_name: _]}] = errors
+    end
+
+    test "create_balance_movement/1 with amount greather than balance returns error changeset",
+         %{attrs: attrs} do
+      assert {:error, %Ecto.Changeset{errors: errors}} =
+               attrs
+               |> Enum.into(@valid_attrs)
+               |> Map.update!(:amount, &(&1 + 999_999_999))
+               |> Bank.create_balance_movement()
+
+      assert [source_account_id: {_, [constraint: :check_violation, constraint_name: _]}] = errors
+    end
+
+    test "delete_balance_movement/1 deletes the balance_movement", %{attrs: attrs} do
+      balance_movement = balance_movement_fixture(attrs)
+      assert {:ok, %BalanceMovement{}} = Bank.delete_balance_movement(balance_movement)
+      assert_raise Ecto.NoResultsError, fn -> Bank.get_balance_movement!(balance_movement.id) end
     end
   end
 end
