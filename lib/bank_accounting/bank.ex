@@ -139,41 +139,65 @@ defmodule BankAccounting.Bank do
     if not balance_movement_changeset.valid? do
       {:error, balance_movement_changeset}
     else
-      %{
-        "source_account_id" => source_account_id,
-        "destination_account_id" => destination_account_id,
-        "amount" => amount
-      } = attrs
+      {source_account_id, destination_account_id, amount} = extract_parameters(attrs)
+      amount = parse_amount2decimal(amount)
 
       try do
-        result =
-          Multi.new()
-          |> Multi.insert(:balance_movement, balance_movement_changeset)
-          |> Multi.update_all(
-            :source_account,
-            from(account in Account, where: account.id == ^source_account_id),
-            inc: [balance: amount * -1]
-          )
-          |> Multi.update_all(
-            :destination_account,
-            from(account in Account, where: account.id == ^destination_account_id),
-            inc: [balance: amount]
-          )
-          |> Repo.transaction()
-          |> create_balance_movement_result()
+        Multi.new()
+        |> Multi.insert(:balance_movement, balance_movement_changeset)
+        |> Multi.update_all(
+          :source_account,
+          from(account in Account, where: account.id == ^source_account_id),
+          inc: [balance: Decimal.mult(amount, -1)]
+        )
+        |> Multi.update_all(
+          :destination_account,
+          from(account in Account, where: account.id == ^destination_account_id),
+          inc: [balance: amount]
+        )
+        |> Repo.transaction()
+        |> create_balance_movement_result()
       rescue
         pg_error in Postgrex.Error ->
           %Postgrex.Error{
             postgres: %{
-              code: :check_violation,
-              constraint: "balance_must_be_positive"
+              code: :check_violation = constraint,
+              constraint: "balance_must_be_positive" = constraint_name
             }
           } = pg_error
 
-          {:error, "A conta de origem não possui saldo suficiente."}
+          {
+            :error,
+            Ecto.Changeset.add_error(
+              balance_movement_changeset,
+              :source_account_id,
+              "A conta de origem não possui saldo suficiente.",
+              constraint: constraint,
+              constraint_name: constraint_name
+            )
+          }
       end
     end
   end
+
+  defp extract_parameters(%{
+         source_account_id: source_account_id,
+         destination_account_id: destination_account_id,
+         amount: amount
+       }) do
+    {source_account_id, destination_account_id, amount}
+  end
+
+  defp extract_parameters(%{
+         "source_account_id" => source_account_id,
+         "destination_account_id" => destination_account_id,
+         "amount" => amount
+       }) do
+    {source_account_id, destination_account_id, amount}
+  end
+
+  defp parse_amount2decimal(amount) when is_float(amount), do: Decimal.from_float(amount)
+  defp parse_amount2decimal(amount), do: Decimal.new(amount)
 
   defp create_balance_movement_result({:ok, result}) do
     {:ok, result[:balance_movement]}

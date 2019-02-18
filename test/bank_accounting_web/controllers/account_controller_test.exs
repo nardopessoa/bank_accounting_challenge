@@ -18,9 +18,13 @@ defmodule BankAccountingWeb.AccountControllerTest do
 
   setup %{conn: conn} do
     {_user, token} = create_and_sign_in_user()
-    conn = put_req_header(conn, "authorization", "bearer #{token}")
 
-    {:ok, conn: put_req_header(conn, "accept", "application/json")}
+    conn =
+      conn
+      |> put_req_header("authorization", "bearer #{token}")
+      |> put_req_header("accept", "application/json")
+
+    {:ok, conn: conn}
   end
 
   describe "index" do
@@ -77,9 +81,8 @@ defmodule BankAccountingWeb.AccountControllerTest do
       conn = delete(conn, Routes.account_path(conn, :delete, account))
       assert response(conn, 204)
 
-      assert_error_sent 404, fn ->
-        get(conn, Routes.account_path(conn, :show, account))
-      end
+      conn = get(conn, Routes.account_path(conn, :show, account))
+      assert response(conn, 404)
     end
   end
 
