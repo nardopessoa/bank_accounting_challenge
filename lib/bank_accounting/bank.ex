@@ -140,7 +140,7 @@ defmodule BankAccounting.Bank do
       {:error, balance_movement_changeset}
     else
       {source_account_id, destination_account_id, amount} = extract_parameters(attrs)
-      amount = Decimal.new(amount)
+      amount = parse_amount2decimal(amount)
 
       try do
         Multi.new()
@@ -195,6 +195,9 @@ defmodule BankAccounting.Bank do
        }) do
     {source_account_id, destination_account_id, amount}
   end
+
+  defp parse_amount2decimal(amount) when is_float(amount), do: Decimal.from_float(amount)
+  defp parse_amount2decimal(amount), do: Decimal.new(amount)
 
   defp create_balance_movement_result({:ok, result}) do
     {:ok, result[:balance_movement]}
