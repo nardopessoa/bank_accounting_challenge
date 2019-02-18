@@ -140,6 +140,7 @@ defmodule BankAccounting.Bank do
       {:error, balance_movement_changeset}
     else
       {source_account_id, destination_account_id, amount} = extract_parameters(attrs)
+      amount = Decimal.new(amount)
 
       try do
         Multi.new()
@@ -147,7 +148,7 @@ defmodule BankAccounting.Bank do
         |> Multi.update_all(
           :source_account,
           from(account in Account, where: account.id == ^source_account_id),
-          inc: [balance: amount * -1]
+          inc: [balance: Decimal.mult(amount, -1)]
         )
         |> Multi.update_all(
           :destination_account,
