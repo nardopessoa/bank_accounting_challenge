@@ -23,6 +23,11 @@ defmodule BankAccountingWeb.AccountController do
   def show(conn, %{"id" => id}) do
     account = Bank.get_account!(id)
     render(conn, "show.json", account: account)
+  rescue
+    Ecto.NoResultsError ->
+      conn
+      |> put_status(:not_found)
+      |> render("not_found.json", id: id)
   end
 
   def update(conn, %{"id" => id, "account" => account_params}) do

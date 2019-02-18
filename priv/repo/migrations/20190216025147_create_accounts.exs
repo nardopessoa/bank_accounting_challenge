@@ -8,5 +8,9 @@ defmodule BankAccounting.Repo.Migrations.CreateAccounts do
       timestamps()
     end
 
+    create constraint(:accounts, :balance_must_be_positive,
+             check: "balance >= 0.0",
+             comment: "O saldo da conta deve ser maior ou igual que zero"
+           )
   end
 end
